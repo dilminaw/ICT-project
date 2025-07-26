@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import logger from './services/logger.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -14,16 +15,18 @@ import userRoutes from './routes/users.js';
 import emotionRoutes from './routes/emotions.js';
 import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
+import logsRoutes from './routes/logs.js';
 
 // Import middleware
 import { authenticateToken } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger, responseTimeMiddleware } from './middleware/requestLogger.js';
 
 // Import database connection
 import { connectDB } from './config/database.js';
 
 dotenv.config();
-console.log('Loaded FRONTEND_URL:', process.env.FRONTEND_URL);
+logger.info('Configuration loaded', { frontendUrl: process.env.FRONTEND_URL });
 
 const app = express();
 const server = createServer(app);
@@ -47,7 +50,8 @@ const limiter = rateLimit({
 // Middleware
 app.use(helmet());
 app.use(compression());
-app.use(morgan('combined'));
+app.use(responseTimeMiddleware);
+app.use(requestLogger);
 app.use(limiter);
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -74,14 +78,15 @@ app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/emotions', authenticateToken, emotionRoutes);
 app.use('/api/progress', authenticateToken, progressRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
+app.use('/api/logs', logsRoutes); // Logs route doesn't require auth for client logs
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  logger.logSocketEvent('user_connected', socket.id);
 
   socket.on('join-room', (userId) => {
     socket.join(userId);
-    console.log(`User ${userId} joined their room`);
+    logger.logSocketEvent('user_joined_room', socket.id, userId);
   });
 
   socket.on('emotion-analysis', (data) => {
@@ -91,10 +96,11 @@ io.on('connection', (socket) => {
       confidence: data.confidence,
       timestamp: new Date()
     });
+    logger.logEmotionAnalysis(data.userId, 'realtime', data.emotion, data.confidence);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    logger.logSocketEvent('user_disconnected', socket.id);
   });
 });
 
@@ -112,9 +118,12 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`🚀 MoodMirror Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  logger.success('MoodMirror Backend started successfully', {
+    port: PORT,
+    healthCheck: `http://localhost:${PORT}/health`,
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 export { io };

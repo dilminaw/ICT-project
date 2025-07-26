@@ -1,16 +1,11 @@
+import logger from '../services/logger.js';
+
 export const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error for debugging
-  console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent')
-  });
+  // Log error using structured logger
+  logger.logError(err, req);
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
