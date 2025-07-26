@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import logger from '../services/logger.js';
 
 export const connectDB = async () => {
   try {
@@ -7,25 +8,31 @@ export const connectDB = async () => {
       useUnifiedTopology: true,
     });
 
-    console.log(`📦 MongoDB Connected: ${conn.connection.host}`);
+    logger.success('Database connected successfully', { 
+      host: conn.connection.host,
+      database: conn.connection.name
+    });
   } catch (error) {
-    console.error('❌ Database connection error:', error.message);
+    logger.error('Database connection failed', { 
+      error: error.message,
+      stack: error.stack
+    });
     process.exit(1);
   }
 };
 
 // Handle connection events
 mongoose.connection.on('disconnected', () => {
-  console.log('❌ MongoDB disconnected');
+  logger.warn('Database disconnected');
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
+  logger.error('Database connection error', { error: err.message });
 });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
-  console.log('📦 MongoDB connection closed through app termination');
+  logger.info('Database connection closed gracefully');
   process.exit(0);
 });

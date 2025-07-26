@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import logger from '../services/logger.js';
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -49,7 +50,12 @@ export const authenticateToken = async (req, res, next) => {
       });
     }
 
-    console.error('Auth middleware error:', error);
+    logger.error('Authentication middleware error', { 
+      error: error.message, 
+      stack: error.stack,
+      url: req.originalUrl,
+      method: req.method 
+    });
     return res.status(500).json({ 
       error: 'Internal server error.',
       message: 'Authentication failed'

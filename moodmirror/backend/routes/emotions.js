@@ -5,6 +5,7 @@ import { body, validationResult } from 'express-validator';
 import EmotionRecord from '../models/EmotionRecord.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { analyzeEmotion } from '../services/emotionAnalysis.js';
+import logger from '../services/logger.js';
 
 const router = express.Router();
 
@@ -159,7 +160,11 @@ router.post('/analyze', upload.fields([
     });
 
   } catch (error) {
-    console.error('Emotion analysis error:', error);
+    logger.error('Emotion analysis route error', { 
+      error: error.message, 
+      stack: error.stack,
+      userId: req.user?.id 
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to analyze emotion',

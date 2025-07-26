@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import apiService from "../services/api.js";
+import logger from "../services/logger.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -79,9 +80,11 @@ export default function LoginPage() {
     try {
       if (isLogin) {
         // Login
+        logger.logUserAction('login_attempt', { email: formData.email });
         const response = await apiService.login(formData.email, formData.password);
 
         if (response.success) {
+          logger.logUserAction('login_success', { email: formData.email });
           setSuccess("Login successful! Redirecting...");
           setTimeout(() => {
             navigate("/scan");
@@ -100,6 +103,10 @@ export default function LoginPage() {
         });
 
         if (response.success) {
+          logger.logUserAction('registration_success', { 
+            email: formData.email,
+            username: formData.username 
+          });
           setSuccess("Registration successful! Please log in.");
           setIsLogin(true);
           setFormData({
@@ -115,6 +122,10 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
+      logger.error('Authentication Error', err, {
+        action: isLogin ? 'login' : 'registration',
+        email: formData.email
+      });
       setError(err.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);

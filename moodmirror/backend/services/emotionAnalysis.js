@@ -3,6 +3,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import logger from './logger.js';
 
 // Mock AI analysis functions - replace with actual AI model integrations
 class EmotionAnalysisService {
@@ -40,7 +41,7 @@ class EmotionAnalysisService {
         facialFeatures
       };
     } catch (error) {
-      console.error('Face analysis error:', error);
+              logger.error('Face analysis failed', { error: error.message, stack: error.stack });
       throw new Error('Failed to analyze face emotion');
     }
   }
@@ -69,7 +70,7 @@ class EmotionAnalysisService {
         audioFeatures
       };
     } catch (error) {
-      console.error('Voice analysis error:', error);
+              logger.error('Voice analysis failed', { error: error.message, stack: error.stack });
       throw new Error('Failed to analyze voice emotion');
     }
   }
@@ -97,7 +98,7 @@ class EmotionAnalysisService {
         movement
       };
     } catch (error) {
-      console.error('Body analysis error:', error);
+              logger.error('Body language analysis failed', { error: error.message, stack: error.stack });
       throw new Error('Failed to analyze body language');
     }
   }
@@ -171,7 +172,7 @@ class EmotionAnalysisService {
         insights
       };
     } catch (error) {
-      console.error('Combined analysis error:', error);
+              logger.error('Combined emotion analysis failed', { error: error.message, stack: error.stack });
       throw new Error('Failed to analyze combined data');
     }
   }
